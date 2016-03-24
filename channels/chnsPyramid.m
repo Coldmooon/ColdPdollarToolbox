@@ -22,7 +22,7 @@ function pyramid = chnsPyramid( I, varargin )
 % can be used to approximate feature responses at nearby scales. The
 % approximation is accurate at least within an entire scale octave. For
 % details and to understand why this unexpected result holds, please see:
-%   P. Dollár, R. Appel, S. Belongie and P. Perona
+%   P. Doll?r, R. Appel, S. Belongie and P. Perona
 %   "Fast Feature Pyramids for Object Detection", PAMI 2014.
 %
 % The parameter "nApprox" determines how many intermediate scales are
@@ -135,13 +135,13 @@ I=rgbConvert(I,cs); pChns.pColor.colorSpace='orig';
 % get scales at which to compute features and list of real/approx scales
 [scales,scaleshw]=getScales(nPerOct,nOctUp,minDs,shrink,sz);
 nScales=length(scales); if(1), isR=1; else isR=1+nOctUp*nPerOct; end
-isR=isR:nApprox+1:nScales; isA=1:nScales; isA(isR)=[];
-j=[0 floor((isR(1:end-1)+isR(2:end))/2) nScales];
-isN=1:nScales; for i=1:length(isR), isN(j(i)+1:j(i+1))=isR(i); end
+isR=isR:nApprox+1:nScales; isA=1:nScales; isA(isR)=[]; % isR means " is it real? ". -- by liyang.
+j=[0 floor((isR(1:end-1)+isR(2:end))/2) nScales]; % isA means " is it approximated? " -- by liyang.
+isN=1:nScales; for i=1:length(isR), isN(j(i)+1:j(i+1))=isR(i); end % isN means the nearest real scale.
 nTypes=0; data=cell(nScales,nTypes); info=struct([]);
 
 % compute image pyramid [real scales]
-for i=isR
+for i=isR % isR stores the index of real scale in 'scales'. -- by liyang.
   s=scales(i); sz1=round(sz*s/shrink)*shrink;
   if(all(sz==sz1)), I1=I; else I1=imResampleMex(I,sz1(1),sz1(2),1); end
   if(s==.5 && (nApprox>0 || nPerOct==1)), I=I1; end
@@ -161,7 +161,7 @@ if( nScales>0 && nApprox>0 && isempty(lambdas) )
 end
 
 % compute image pyramid [approximated scales]
-for i=isA
+for i=isA % isN means which is the nearest real scale for i. -- by liyang.
   iR=isN(i); sz1=round(sz*scales(i)/shrink);
   for j=1:nTypes, ratio=(scales(i)/scales(iR)).^-lambdas(j);
     data{i,j}=imResampleMex(data{iR,j},sz1(1),sz1(2),ratio); end
@@ -183,6 +183,20 @@ pyramid = struct( 'pPyramid',pPyramid, 'nTypes',nTypes, ...
 
 end
 
+% an octave means that how many steps we need go so that we can reach half or
+% double size of the original image. For example, if octave = 8 and the start
+% point is 1x, then we can reach 2x at the 9th point.
+% 1    2    3    4    5    6    7    8    9
+% |----|----|----|----|----|----|----|----|
+% 1x 2^(1/8)x   ....         2^(6/8)x  2^(8/8)x=2x
+% minDs: the smallest image after scaling. From the original size to minDs, we
+% may go over several octaves.
+% Why use log2(min(sz./minDs)? Suppose the smallest scale is 1/6x and octave is 8.
+% So, for each step, the image is scaled by 2^(1/8). Suppose we need n steps.
+% Then, the equation is : x/2^(n/8) = (1/6)x.
+% The solution is n = 8*log2(6), where 8 is the octave.
+% Therefore we have nPerOct*(nOctUp+log2(min(sz./minDs)))+1
+% -- by liyang.
 function [scales,scaleshw] = getScales(nPerOct,nOctUp,minDs,shrink,sz)
 % set each scale s such that max(abs(round(sz*s/shrink)*shrink-sz*s)) is
 % minimized without changing the smaller dim of sz (tricky algebra)

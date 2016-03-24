@@ -6,9 +6,25 @@
 % Copyright 2014 Piotr Dollar.  [pdollar-at-gmail.com]
 % Licensed under the Simplified BSD License [see external/bsd.txt]
 
+% to run this code, first download INRIAconverted database from caltech
+% pedestrian database website. Then download matlab evaluation tool from the
+% same link. unzip 'INRIAconverted' into evaluationTool path, and rename the
+% database to 'data-INRIA'. Read 'README.MD' file in the evaluationTool path.
+% Finally, move 'data-INRIA/set00' and set01 into 'data-INRIA/videos/' . If the path is
+% configured correctly, you can verify it by running 'vbbPlayer' in the command
+% window of Matlab. 
+% -- by liyang.
 %% extract training and testing images and ground truth
-cd(fileparts(which('acfDemoInria.m'))); dataDir='../../data/Inria/';
-for s=1:2, pth=dbInfo('InriaTest');
+
+% The code below is used to extract train and test samples from INRIAconverted
+% and store them into 'dataDir'. The same to annotations file. I have to say it
+% is a waste of harddisk space. The code first check if the samples have been
+% extracted. If not, then use 'seqIo' and 'vbb' function to create them.
+% -- by liyang.
+
+% dataDir is used to store train and test samples extracted from INRIAconverted.
+cd(fileparts(which('acfDemoInria.m'))); dataDir='../../data/Inria/'; 
+for s=1:2, pth=dbInfo('InriaTest'); % pth is a string.
   if(s==1), set='00'; type='train'; else set='01'; type='test'; end
   if(exist([dataDir type '/posGt'],'dir')), continue; end
   seqIo([pth '/videos/set' set '/V000'],'toImgs',[dataDir type '/pos']);
