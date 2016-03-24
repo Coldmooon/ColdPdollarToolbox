@@ -1,3 +1,4 @@
 /videos/private/*png*.*
 /videos/private/*jpg8c.*
 /detector/models/*Dets.txt
+evaluation3.2.1/results/
