@@ -126,7 +126,7 @@ dataNames = {'UsaTest','UsaTrain','InriaTest',...
   'TudBrussels','ETH','Daimler','Japan'};
 
 % select databases, experiments and algorithms for evaluation
-dataNames = dataNames(1); % select one or more databases for evaluation
+dataNames = dataNames(3); % select one or more databases for evaluation
 exps = exps(1);           % select one or more experiment for evaluation
 algs = algs(:);           % select one or more algorithms for evaluation
 
