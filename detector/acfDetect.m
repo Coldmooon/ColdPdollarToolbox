@@ -36,11 +36,22 @@ function bbs = acfDetect( I, detector, fileName )
 % Licensed under the Simplified BSD License [see external/bsd.txt]
 
 % run detector on every image
-if(nargin<3), fileName=''; end; multiple=iscell(I);
-if(~isempty(fileName) && exist(fileName,'file')), bbs=1; return; end
-if(~multiple), bbs=acfDetectImg(I,detector); else
-  n=length(I); bbs=cell(n,1);
-  parfor i=1:n, bbs{i}=acfDetectImg(I{i},detector); end
+if(nargin<3), 
+    fileName=''; 
+end; 
+multiple=iscell(I);
+if(~isempty(fileName) && exist(fileName,'file')), 
+    bbs=1; 
+    return; 
+end
+if(~multiple), 
+    bbs=acfDetectImg(I,detector); 
+else
+  n=length(I); 
+  bbs=cell(n,1);
+  parfor i=1:n, 
+      bbs{i}=acfDetectImg(I{i},detector); 
+  end
 end
 
 % write results to disk if fileName specified
@@ -56,23 +67,36 @@ end
 
 function bbs = acfDetectImg( I, detector )
 % Run trained sliding-window object detector on given image.
-Ds=detector; if(~iscell(Ds)), Ds={Ds}; end; nDs=length(Ds);
+Ds=detector; 
+if(~iscell(Ds)), 
+    Ds={Ds}; 
+end; 
+nDs=length(Ds);
 opts=Ds{1}.opts; pPyramid=opts.pPyramid; pNms=opts.pNms;
 imreadf=opts.imreadf; imreadp=opts.imreadp;
 shrink=pPyramid.pChns.shrink; pad=pPyramid.pad;
 separate=nDs>1 && isfield(pNms,'separate') && pNms.separate;
 % read image and compute features (including optionally applying filters)
-if(all(ischar(I))), I=feval(imreadf,I,imreadp{:}); end
-P=chnsPyramid(I,pPyramid); bbs=cell(P.nScales,nDs);
-if(isfield(opts,'filters') && ~isempty(opts.filters)), shrink=shrink*2;
-  for i=1:P.nScales, fs=opts.filters; C=repmat(P.data{i},[1 1 size(fs,4)]);
-    for j=1:size(C,3), C(:,:,j)=conv2(C(:,:,j),fs(:,:,j),'same'); end
-    P.data{i}=imResample(C,.5);
-  end
+if(all(ischar(I))), 
+    I=feval(imreadf,I,imreadp{:}); 
+end
+P=chnsPyramid(I,pPyramid);
+bbs=cell(P.nScales,nDs);
+if(isfield(opts,'filters') && ~isempty(opts.filters)), 
+    shrink=shrink*2;
+    for i=1:P.nScales, 
+        fs=opts.filters; 
+        C=repmat(P.data{i},[1 1 size(fs,4)]);
+        for j=1:size(C,3), 
+            C(:,:,j)=conv2(C(:,:,j),fs(:,:,j),'same'); 
+        end
+        P.data{i}=imResample(C,.5);
+    end
 end
 % apply sliding window classifiers
 for i=1:P.nScales
-  for j=1:nDs, opts=Ds{j}.opts;
+  for j=1:nDs,
+    opts=Ds{j}.opts;
     modelDsPad=opts.modelDsPad; modelDs=opts.modelDs;
     bb = acfDetect1(P.data{i},Ds{j}.clf,shrink,...
       modelDsPad(1),modelDsPad(2),opts.stride,opts.cascThr);
@@ -83,6 +107,7 @@ for i=1:P.nScales
     bb(:,4)=modelDs(1)/P.scales(i);
     if(separate), bb(:,6)=j; end; bbs{i,j}=bb;
   end
-end; bbs=cat(1,bbs{:});
+end; 
+bbs=cat(1,bbs{:});
 if(~isempty(pNms)), bbs=bbNms(bbs,pNms); end
 end

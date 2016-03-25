@@ -56,7 +56,8 @@ detector=acfModify(detector,pModify);
 
 %% run detector on a sample image (see acfDetect)
 imgNms=bbGt('getFiles',{[dataDir 'test/pos']});
-I=imread(imgNms{1}); tic, bbs=acfDetect(I,detector); toc
+I=imread(imgNms{1}); 
+tic, bbs=acfDetect(I,detector); toc
 figure(1); im(I); bbApply('draw',bbs); pause(.1);
 
 %% test detector and plot roc (see acfTest)
