@@ -23,7 +23,7 @@
 % -- by liyang.
 
 % dataDir is used to store train and test samples extracted from INRIAconverted.
-cd(fileparts(which('acfDemoInria.m'))); dataDir='../../data/Inria/'; 
+cd(fileparts(which('acfDemoInria.m'))); dataDir='../data/Inria/'; 
 for s=1:2, pth=dbInfo('InriaTest'); % pth is a string.
   if(s==1), set='00'; type='train'; else set='01'; type='test'; end
   if(exist([dataDir type '/posGt'],'dir')), continue; end
