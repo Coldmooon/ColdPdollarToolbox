@@ -67,6 +67,12 @@ end
 
 function bbs = acfDetectImg( I, detector )
 % Run trained sliding-window object detector on given image.
+% ----------------------------------------------------------
+% Note that the parameters are extracted here. This is because features
+% should be computed according to the detectors trained at the training
+% stage. If the parameters are not consistant with that of training stage,
+% we will get the wrong results.
+% -- by liyang.
 Ds=detector; 
 if(~iscell(Ds)), 
     Ds={Ds}; 
@@ -76,6 +82,8 @@ opts=Ds{1}.opts; pPyramid=opts.pPyramid; pNms=opts.pNms;
 imreadf=opts.imreadf; imreadp=opts.imreadp;
 shrink=pPyramid.pChns.shrink; pad=pPyramid.pad;
 separate=nDs>1 && isfield(pNms,'separate') && pNms.separate;
+
+% Step 1: 
 % read image and compute features (including optionally applying filters)
 if(all(ischar(I))), 
     I=feval(imreadf,I,imreadp{:}); 
@@ -93,6 +101,8 @@ if(isfield(opts,'filters') && ~isempty(opts.filters)),
         P.data{i}=imResample(C,.5);
     end
 end
+
+% Step 2:
 % apply sliding window classifiers
 for i=1:P.nScales
   for j=1:nDs,
@@ -109,5 +119,8 @@ for i=1:P.nScales
   end
 end; 
 bbs=cat(1,bbs{:});
-if(~isempty(pNms)), bbs=bbNms(bbs,pNms); end
+if(~isempty(pNms)), 
+    bbs=bbNms(bbs,pNms); 
+end
+
 end

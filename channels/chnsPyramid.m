@@ -41,9 +41,16 @@ function pyramid = chnsPyramid( I, varargin )
 % nApprox=nPerOct-1 or nApprox=-1) works well, and results in large speed
 % gains (~4x). See example below for a visualization of the pyramid
 % computed with and without the approximation. While there is a slight
-% difference in the channels, during detection the approximated channels
+% [difference] in the channels, during detection the approximated channels
 % have been shown to be essentially as effective as the original channels.
 %
+% ---------------------------------------------
+% Commented by liyang:
+% The "difference" referred above means the difference between the channels
+% computed in the real scale and the channels computed by the
+% approximation. Experiments proved that the approximated channels show
+% fast detection with little loss of accuracy.
+% ---------------------------------------------
 % While every effort is made to space the image scales evenly, this is not
 % always possible. For example, given a 101x100 image, it is impossible to
 % downsample it by exactly 1/2 along the first dimension, moreover, the
@@ -57,11 +64,12 @@ function pyramid = chnsPyramid( I, varargin )
 %
 % If chnsPyramid() is called with no inputs, the output is the complete
 % default parameters (pPyramid). Finally, we describe the remaining
-% parameters: "pad" controls the amount the channels are padded after being
-% created (useful for detecting objects near boundaries); "smooth" controls
-% the amount of smoothing after the channels are created (and controls the
-% integration scale of the channels); finally "concat" determines whether
-% all channels at a single scale are concatenated in the output.
+% parameters: 
+% "pad" controls the amount the channels are padded after being
+% created (useful for detecting objects near boundaries); 
+% "smooth" controls the amount of smoothing after the channels are created (and controls the
+% integration scale of the channels); 
+% finally "concat" determines whether all channels at a single scale are concatenated in the output.
 %
 % An emphasis has been placed on speed, with the code undergoing heavy
 % optimization. Computing the full set of (approximated) *multi-scale*
@@ -197,7 +205,8 @@ end
 
 % compute image pyramid [approximated scales]
 for i=isA % isN means which is the nearest real scale for i. -- by liyang.
-  iR=isN(i); sz1=round(sz*scales(i)/shrink);
+  iR=isN(i); 
+  sz1=round(sz*scales(i)/shrink);
   for j=1:nTypes, 
       ratio=(scales(i)/scales(iR)).^-lambdas(j);
       data{i,j}=imResampleMex(data{iR,j},sz1(1),sz1(2),ratio); 
@@ -221,7 +230,8 @@ if(concat && nTypes),
 end
 if(concat && nTypes), 
     for i=1:nScales, 
-        data{i}=cat(3,data0{i,:}); 
+        % put the channels in parallel, like poker. -- by liyang
+        data{i}=cat(3,data0{i,:});
     end; 
 end
 
