@@ -115,8 +115,8 @@ function pyramid = chnsPyramid( I, varargin )
 if(nargin==2), p=varargin{1}; else p=[]; end
 if( ~isfield(p,'complete') || p.complete~=1 || isempty(I) )
   dfs={ 'pChns',{}, 'nPerOct',8, 'nOctUp',0, 'nApprox',-1, ...
-    'lambdas',[], 'pad',[0 0], 'minDs',[16 16], ...
-    'smooth',1, 'concat',1, 'complete',1 };
+        'lambdas',[], 'pad',[0 0], 'minDs',[16 16], ...
+        'smooth',1, 'concat',1, 'complete',1 };
   p=getPrmDflt(varargin,dfs,1); chns=chnsCompute([],p.pChns);
   p.pChns=chns.pChns; p.pChns.complete=1; shrink=p.pChns.shrink;
   p.pad=round(p.pad/shrink)*shrink; p.minDs=max(p.minDs,shrink*4);
@@ -134,51 +134,106 @@ I=rgbConvert(I,cs); pChns.pColor.colorSpace='orig';
 
 % get scales at which to compute features and list of real/approx scales
 [scales,scaleshw]=getScales(nPerOct,nOctUp,minDs,shrink,sz);
-nScales=length(scales); if(1), isR=1; else isR=1+nOctUp*nPerOct; end
-isR=isR:nApprox+1:nScales; isA=1:nScales; isA(isR)=[]; % isR means " is it real? ". -- by liyang.
+nScales=length(scales); 
+if(1), 
+    isR=1; 
+else
+    isR=1+nOctUp*nPerOct; 
+end
+isR = isR:(nApprox + 1):nScales; 
+isA=1:nScales; 
+isA(isR)=[]; % isR means " is it real? ". -- by liyang.
 j=[0 floor((isR(1:end-1)+isR(2:end))/2) nScales]; % isA means " is it approximated? " -- by liyang.
-isN=1:nScales; for i=1:length(isR), isN(j(i)+1:j(i+1))=isR(i); end % isN means the nearest real scale.
-nTypes=0; data=cell(nScales,nTypes); info=struct([]);
+isN=1:nScales; 
+for i=1:length(isR), 
+    isN(j(i)+1:j(i+1))=isR(i); 
+end % isN means the nearest real scale.
+nTypes=0; 
+data=cell(nScales,nTypes); 
+info=struct([]);
 
 % compute image pyramid [real scales]
 for i=isR % isR stores the index of real scale in 'scales'. -- by liyang.
-  s=scales(i); sz1=round(sz*s/shrink)*shrink;
-  if(all(sz==sz1)), I1=I; else I1=imResampleMex(I,sz1(1),sz1(2),1); end
-  if(s==.5 && (nApprox>0 || nPerOct==1)), I=I1; end
-  chns=chnsCompute(I1,pChns); info=chns.info;
-  if(i==isR(1)), nTypes=chns.nTypes; data=cell(nScales,nTypes); end
+  s=scales(i); 
+  sz1=round(sz*s/shrink)*shrink;
+  if(all(sz==sz1)), 
+      I1=I; 
+  else
+      I1=imResampleMex(I,sz1(1),sz1(2),1); 
+  end
+  if(s==.5 && (nApprox>0 || nPerOct==1)), 
+      I=I1; 
+  end
+  chns=chnsCompute(I1,pChns); 
+  info=chns.info;
+  if(i==isR(1)), 
+      nTypes=chns.nTypes; 
+      data=cell(nScales,nTypes); 
+  end
   data(i,:) = chns.data;
 end
 
 % if lambdas not specified compute image specific lambdas
 if( nScales>0 && nApprox>0 && isempty(lambdas) )
   is=1+nOctUp*nPerOct:nApprox+1:nScales;
-  assert(length(is)>=2); if(length(is)>2), is=is(2:3); end
-  f0=zeros(1,nTypes); f1=f0; d0=data(is(1),:); d1=data(is(2),:);
-  for j=1:nTypes, d=d0{j}; f0(j)=sum(d(:))/numel(d); end
-  for j=1:nTypes, d=d1{j}; f1(j)=sum(d(:))/numel(d); end
+  assert(length(is)>=2); 
+  if(length(is)>2), 
+      is=is(2:3); 
+  end
+  f0=zeros(1,nTypes); 
+  f1=f0; 
+  d0=data(is(1),:); 
+  d1=data(is(2),:);
+  for j=1:nTypes, 
+      d=d0{j}; 
+      f0(j)=sum(d(:))/numel(d); 
+  end
+  for j=1:nTypes, 
+      d=d1{j}; 
+      f1(j)=sum(d(:))/numel(d); 
+  end
   lambdas = - log2(f0./f1) / log2(scales(is(1))/scales(is(2)));
 end
 
 % compute image pyramid [approximated scales]
 for i=isA % isN means which is the nearest real scale for i. -- by liyang.
   iR=isN(i); sz1=round(sz*scales(i)/shrink);
-  for j=1:nTypes, ratio=(scales(i)/scales(iR)).^-lambdas(j);
-    data{i,j}=imResampleMex(data{iR,j},sz1(1),sz1(2),ratio); end
+  for j=1:nTypes, 
+      ratio=(scales(i)/scales(iR)).^-lambdas(j);
+      data{i,j}=imResampleMex(data{iR,j},sz1(1),sz1(2),ratio); 
+  end
 end
 
 % smooth channels, optionally pad and concatenate channels
-for i=1:nScales*nTypes, data{i}=convTri(data{i},smooth); end
-if(any(pad)), for i=1:nScales, for j=1:nTypes
-      data{i,j}=imPad(data{i,j},pad/shrink,info(j).padWith); end; end; end
-if(concat && nTypes), data0=data; data=cell(nScales,1); end
-if(concat && nTypes), for i=1:nScales, data{i}=cat(3,data0{i,:}); end; end
+for i=1:nScales*nTypes, 
+    data{i}=convTri(data{i},smooth); 
+end
+if(any(pad)), 
+    for i=1:nScales, 
+        for j=1:nTypes
+            data{i,j}=imPad(data{i,j},pad/shrink,info(j).padWith); 
+        end; 
+    end; 
+end
+if(concat && nTypes), 
+    data0=data; 
+    data=cell(nScales,1); 
+end
+if(concat && nTypes), 
+    for i=1:nScales, 
+        data{i}=cat(3,data0{i,:}); 
+    end; 
+end
 
 % create output struct
-j=info; if(~isempty(j)), j=find(strcmp('color channels',{j.name})); end
-if(~isempty(j)), info(j).pChn.colorSpace=cs; end
-pyramid = struct( 'pPyramid',pPyramid, 'nTypes',nTypes, ...
-  'nScales',nScales, 'data',{data}, 'info',info, 'lambdas',lambdas, ...
+j=info; 
+if(~isempty(j)), 
+    j=find(strcmp('color channels',{j.name})); 
+end
+if(~isempty(j)), 
+    info(j).pChn.colorSpace=cs; 
+end
+pyramid = struct( 'pPyramid',pPyramid, 'nTypes',nTypes, 'nScales',nScales, 'data',{data}, 'info',info, 'lambdas',lambdas, ...
   'scales',scales, 'scaleshw',scaleshw );
 
 end
@@ -200,20 +255,34 @@ end
 function [scales,scaleshw] = getScales(nPerOct,nOctUp,minDs,shrink,sz)
 % set each scale s such that max(abs(round(sz*s/shrink)*shrink-sz*s)) is
 % minimized without changing the smaller dim of sz (tricky algebra)
-if(any(sz==0)), scales=[]; scaleshw=[]; return; end
+if(any(sz==0)), 
+    scales=[]; 
+    scaleshw=[]; 
+    return; 
+end
 nScales = floor(nPerOct*(nOctUp+log2(min(sz./minDs)))+1);
 scales = 2.^(-(0:nScales-1)/nPerOct+nOctUp);
-if(sz(1)<sz(2)), d0=sz(1); d1=sz(2); else d0=sz(2); d1=sz(1); end
+if(sz(1)<sz(2)), 
+    d0=sz(1); 
+    d1=sz(2); 
+else
+    d0=sz(2); 
+    d1=sz(1); 
+end
 for i=1:nScales, 
     s=scales(i);
     s0=(round(d0*s/shrink)*shrink-.25*shrink)./d0;
     s1=(round(d0*s/shrink)*shrink+.25*shrink)./d0;
     ss=(0:.01:1-eps)*(s1-s0)+s0;
-    es0=d0*ss; es0=abs(es0-round(es0/shrink)*shrink);
-    es1=d1*ss; es1=abs(es1-round(es1/shrink)*shrink);
-    [~,x]=min(max(es0,es1)); scales(i)=ss(x);
+    es0=d0*ss; 
+    es0=abs(es0-round(es0/shrink)*shrink);
+    es1=d1*ss; 
+    es1=abs(es1-round(es1/shrink)*shrink);
+    [~,x]=min(max(es0,es1)); 
+    scales(i)=ss(x);
 end
-kp=[scales(1:end-1)~=scales(2:end) true]; scales=scales(kp);
+kp=[scales(1:end-1)~=scales(2:end) true]; 
+scales=scales(kp);
 scaleshw = [round(sz(1)*scales/shrink)*shrink/sz(1);
   round(sz(2)*scales/shrink)*shrink/sz(2)]';
 end
