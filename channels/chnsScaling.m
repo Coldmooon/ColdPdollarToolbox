@@ -72,6 +72,14 @@ for i=1:nImages,
 end
 
 % compute fs [nImages x nScales x nTypes] array of feature means
+% ------------------------------
+% Compute the mean features for each image, each scale, and each type of feature.
+% Imagine that the images lie on the first dimension, the scales lie on
+% the second dimension, and the feature types lie on the third dimension.
+% This structure is similar to Caffe. We can treat scales and feature types
+% as a virtual "image", where scales are row and feature types are column,
+% and each element in this structure is a mean of features.
+% -- by liyang.
 P=chnsPyramid(Is{1},pPyramid); 
 scales=P.scales'; 
 info=P.info;
@@ -88,18 +96,66 @@ for i=1:nImages,
 end
 
 % remove fs with fs(:,1,:) having small values
+% --------------------------------------------
+% Continue to imagine. There are 28 layers in the structure described
+% above. Each layer is corresponding to a scale. For the original scale,
+% that is scales(1), we can get the first layer's features for all images
+% and all the types of features. 'kp' is used to do this. Therefore,
+% 'fs(:, 1, :)' means all the elements in the first layer. We are
+% interested in the max elements in the first layer. There are three max 
+% elements corresponding to three columns respectively. Next, we intend to
+% compare each element in the first layer with the max element for each
+% type of feature, that is column comparisons. 'kp(ones(1,nImages),1,:)'
+% make 201 copys of the max elements, which are corresponding to the
+% elements in the first one by one, then divided by 50, and finally compare
+% with the elements in the first layer.
+% -- by liyang.
 kp=max(fs(:,1,:)); 
-kp=fs(:,1,:)>kp(ones(1,nImages),1,:)/50;
+max_layer = kp(ones(1,nImages),1,:)/50;
+% For the first layer, find the elements which are not less than 50% of max
+% values. -- by liyang
+kp=fs(:,1,:) > max_layer; 
+% As long as there is a element which is less than the 50% max value, the image
+% is excluded. Just as a saying in China, a smelly meat brings the entire
+% pot bad. -- by liyang.
 kp=min(kp,[],3); 
+% Only keep the images whose elements are bigger than 50% max.-- by liyang.
 fs=fs(kp,:,:); 
+% Count the number of images we kept. -- by liyang.
 nImages=size(fs,1);
 
 % compute ratios, intercepts and lambdas using least squares
 scales1=scales(2:end); 
 nScales=nScales-1; 
 O=ones(nScales,1);
+% ----------------------------------------------------------------------
+% fs(:,2:end,:) means getting the second to the last layer in the feature
+% pyramid. fs(:,O,:) means expending the first layer to 27 layers which are
+% corresponding to the 2:end layer by layer. Therefore, rs is the ratio
+% between the first layer and the remaining layers.
+% mean(rs, 1) averages the 201 images, which results in a mean average feature
+% map. -- by liyang.
 rs=fs(:,2:end,:)./fs(:,O,:); 
 mus=permute(mean(rs,1),[2 3 1]);
+% ----------------------------------------------------------------------
+% There are a lot of stories in the next line. First, the symbol "\" has
+% already contained the least squares computation, see "help \". So, no need
+% to manually compute the least squares. Second, what is the "O" in 
+% [O -log2(scales1)]? Note that in [O -log2(scales1)], the symbol "-" is 
+% not the meaning of minus. There is a space between O and -log2(scales1), 
+% therefore [O -log2(scales1)] means making a matrix by O and
+% -log2(scales1). Finally, why is there a O in [O -log2(scales1)] ? To
+% answer this, we need to review the paper. In page 1537, it is said that 
+% 
+% u_s = a_ * s^(-lambda)  =>  log2(u_s) = log2(a_) -lambda*log2(s).
+% 
+% If change this formula to the form of matrix, we get:
+% 
+% log2(u_s) = [1  -lambda] * [log2(a_)  log2(s)]. 
+% 
+% See? This is exactly the thing that the next line means. By this formula,
+% 'a_' and 'lambda' can be computed together.
+% -- by liyang.
 out=[O -log2(scales1)]\log2(mus); 
 as=2.^out(1,:); 
 lambdas=out(2,:);
