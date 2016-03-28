@@ -86,7 +86,7 @@ info=P.info;
 nScales=P.nScales; 
 nTypes=P.nTypes; 
 fs=zeros(nImages,nScales,nTypes);
-for i=1:nImages, 
+parfor i=1:nImages, 
     P=chnsPyramid(Is{i},pPyramid); 
     for j=1:nScales
         for k=1:nTypes, 
@@ -168,6 +168,12 @@ if(show==0),
 end
 
 % compute predicted means and errors for display purposes
+% -------------------------------------------------------
+% musp: Compute the estimated values.
+% errsFit: Compute L1 loss between the estimated values and the real ones.
+% mus is the average values of all the images for each scale, while stds is
+% the standard dev. .
+% -- by liyang.
 musp=as(O,:).*scales1(:,ones(1,nTypes)).^-lambdas(O,:);
 errsFit=mean(abs(musp-mus)); 
 stds=permute(std(rs,0,1),[2 3 1]);
