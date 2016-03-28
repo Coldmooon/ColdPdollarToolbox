@@ -281,9 +281,17 @@ else
 end
 for i=1:nScales, 
     s=scales(i);
+    % s0 is used to have a look at that if we move a little step towards
+    % left, what will be the rate between the result and the original;
+    % Similar, s1 will move a little step towards right.
     s0=(round(d0*s/shrink)*shrink-.25*shrink)./d0;
     s1=(round(d0*s/shrink)*shrink+.25*shrink)./d0;
-    ss=(0:.01:1-eps)*(s1-s0)+s0;
+    % ss is a fomula of straight line: 
+    % If 0 is picked up, ss = s0; If 1 is picked up, ss = s1;
+    % For values between 0 and 1, s0 < ss < s1;
+    % -- by liyang.
+    ss=(0:.01:1-eps)*(s1-s0)+s0; 
+    % d0*s0 < es0 < d0*s1.
     es0=d0*ss; 
     es0=abs(es0-round(es0/shrink)*shrink);
     es1=d1*ss; 
@@ -294,5 +302,5 @@ end
 kp=[scales(1:end-1)~=scales(2:end) true]; 
 scales=scales(kp);
 scaleshw = [round(sz(1)*scales/shrink)*shrink/sz(1);
-  round(sz(2)*scales/shrink)*shrink/sz(2)]';
+            round(sz(2)*scales/shrink)*shrink/sz(2)]';
 end
