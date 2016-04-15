@@ -137,7 +137,7 @@ O=ones(nScales,1);
 % mean(rs, 1) averages the 201 images, which results in a mean average feature
 % map. -- by liyang.
 rs=fs(:,2:end,:)./fs(:,O,:); 
-mus=permute(mean(rs,1),[2 3 1]);
+mus=permute(mean(rs,1),[2 3 1]); % Corresponding to Eqn.(5) of paper. 
 % ----------------------------------------------------------------------
 % There are a lot of stories in the next line. First, the symbol "\" has
 % already contained the least squares computation, see "help \". So, no need
@@ -170,10 +170,21 @@ end
 
 % compute predicted means and errors for display purposes
 % -------------------------------------------------------
-% musp: Compute the estimated values.
-% errsFit: Compute L1 loss between the estimated values and the real ones.
-% mus is the average values of all the images for each scale, while stds is
-% the standard dev. .
+% musp: the best-fit reates of features at the different scales using the
+%       computed 'lamda' and 'as'. The rates are mean value since the lamda
+%       and as are computed over all the images.
+%
+% errsFit: $\xi$ in Eqn.(4), the deviation from the power law. See the
+% paragraph beginning with "There is strong agreement between the resulting
+% best-fit lines and the observations.". You will find a equation:
+% \left | E[\xi] \right | = \left | \mu_s - a_{\Omega}s^{-\lambda_{\Omega} } \right |
+%
+% mus: The observation or the real rates of features at the different scales.
+%
+% errsFits is corresponding to the section 4.2 and used to verify the
+% expection of $\xi$ is very small and close to zero. stds is corresponding
+% to the section 4.3 and used to show the deviation from power law for a
+% single image.
 % -- by liyang.
 musp=as(O,:).*scales1(:,ones(1,nTypes)).^-lambdas(O,:);
 errsFit=mean(abs(musp-mus)); 
@@ -196,10 +207,18 @@ for k=1:nTypes
   % plot ratios
   subplot(2,nTypes,k); 
   set(gca,tp{:});
+  % In Fig.3 of paper, we can see " ... for 20 randomly selected pedestrian
+  % images are shown as faint gray linees. ..." -- by liyang.
   for i=round(linspace(1,nImages,20))
+    % used to plot the \textbf{real} rate of features v.s. the rate of scale 
+    % for selected 20 images. -- by liyang.
     loglog(1./scales1,rs(i,:,k),'Color',[1 1 1]*.8); hold on; 
   end
+  % used to plot the real mean rates over all the images. -- liyang.
   h0=loglog(1./scales1,mus(:,k),'go',lp{:});
+  % used to plot the estimated mean rates. You will find that it is a
+  % straight line! This is because we estimate the rates of features at the
+  % different scales by a power relationship. -- by liyang.
   h1=loglog(1./scales1,musp(:,k),'b-',lp{:});
   title(sprintf('%s\n\\lambda = %.03f,  error = %.2e',...
     info(k).name,lambdas(k),errsFit(k)));
