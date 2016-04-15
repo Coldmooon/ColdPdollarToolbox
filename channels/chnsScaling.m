@@ -66,7 +66,8 @@ nImages=numel(Is);
 for i=1:nImages, 
     ds=min(ds,[size(Is{i},1) size(Is{i},2)]); 
 end
-ds=round(ds/pChns.shrink)*pChns.shrink;
+% ds=round(ds/pChns.shrink)*pChns.shrink;
+ds=floor(ds/pChns.shrink)*pChns.shrink; % for INRIA train pos. --by liyang 
 for i=1:nImages, 
     Is{i}=Is{i}(1:ds(1),1:ds(2),:); 
 end
