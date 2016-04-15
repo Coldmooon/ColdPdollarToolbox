@@ -105,6 +105,7 @@ for i=1:n
     try
       I = imread([srcDir name nstr '.' ext ] );
     catch %#ok<CTCH>
+%       continue;
       error( ['Unable to read image: ' srcDir name nstr '.' ext] );
     end;
   end
