@@ -161,7 +161,20 @@ data=cell(nScales,nTypes);
 info=struct([]);
 
 % compute image pyramid [real scales]
-for i=isR % isR stores the index of real scale in 'scales'. -- by liyang.
+% isR stores the index of real scale in 'scales'. 
+% Note!
+% The pipeline is: 
+% 1) modify the target image a little to make it be integer times size of shrink.
+% 2) resize the target image
+% 3) compute the features 
+% The dimension of features can always be known before computing actually!!!
+% The parameter, [shrink], is used to control the dimension of output
+% features. 
+% Dimension of features = (size of resampled image) / shrink
+% This is very important when compute features at the approximate
+% scales. See below.
+% -- by liyang.
+for i=isR 
   s=scales(i); 
   sz1=round(sz*s/shrink)*shrink;
   if(all(sz==sz1)), 
@@ -204,12 +217,27 @@ if( nScales>0 && nApprox>0 && isempty(lambdas) )
 end
 
 % compute image pyramid [approximated scales]
-for i=isA % isN means which is the nearest real scale for i. -- by liyang.
+% isN means which is the nearest real scale for i.
+% Pipeline:
+% 1) get the size of resampled target image
+% 2) compute dimension of features of resampled image using shrink
+% 3) resample features to the dimension computed above.
+% Why do we need to compute the dimension of output features in advance?
+% This is because the approximated features should have the same dimension
+% as the real features.
+% The dimension of features at the real scale = size of image / shrink
+% Therefore, the dimension of features at the approximated scale = 
+% size of image / shrink.
+% sz*scales(i): the size of resampled image
+% sz1: the dimension of features of resampled image.
+% -- by liyang.
+for i=isA 
   iR=isN(i); 
   sz1=round(sz*scales(i)/shrink);
   for j=1:nTypes, 
       ratio=(scales(i)/scales(iR)).^-lambdas(j);
-      data{i,j}=imResampleMex(data{iR,j},sz1(1),sz1(2),ratio); 
+%       data{i,j}=imResampleMex(data{iR,j},sz1(1),sz1(2),ratio); 
+      data{i,j}=imResample(data{iR,j},scales(i),'bilinear', ratio);
   end
 end
 

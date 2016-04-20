@@ -65,6 +65,7 @@ if( bilinear )
   B=imResampleMex(A,m1,n1,norm);
 else
   % use nearest neighbor interpolation
+  % This is very like a pooling operation. -- by liyang.
   if(k==1), sy=scale; 
       sx=sy; 
       m1=ceil(m*sy); 
@@ -76,8 +77,8 @@ else
       sx=n1/n; 
   end
   y=(1:m1)'; 
-  y=floor(y/sy-.5/sy+1); 
-  y=min(max(1,y),m);
+  y=floor(y/sy-.5/sy+1);  % y is the corresponding pixel position in the original image. -- by liyang.
+  y=min(max(1,y),m); % make y: 1 < y < 256 -- by liyang
   x=(1:n1)';
   x=floor(x/sx-.5/sx+1); 
   x=min(max(1,x),n);
