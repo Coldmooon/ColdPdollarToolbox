@@ -237,7 +237,7 @@ for i=isA
   for j=1:nTypes, 
       ratio=(scales(i)/scales(iR)).^-lambdas(j);
 %       data{i,j}=imResampleMex(data{iR,j},sz1(1),sz1(2),ratio); 
-      data{i,j}=imResample(data{iR,j},scales(i),'bilinear', ratio);
+      data{i,j}=imResample(data{iR,j},scales(i)/scales(iR),'bilinear', ratio);
   end
 end
 
